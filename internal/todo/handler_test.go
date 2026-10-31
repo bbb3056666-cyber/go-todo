@@ -154,6 +154,34 @@ func TestHandlerInvalidRequest(t *testing.T) {
 	}
 }
 
+func TestHandlerRequestBodyLimit(t *testing.T) {
+	const limit = 64 * 1024
+	const validJSON = `{"title":"valid"}`
+	for _, tt := range []struct {
+		name   string
+		body   string
+		status int
+	}{
+		{"exactly 64KB", strings.Repeat(" ", limit-len(validJSON)) + validJSON, http.StatusCreated},
+		{"over 64KB leading whitespace", strings.Repeat(" ", limit+1-len(validJSON)) + validJSON, http.StatusBadRequest},
+		{"over 64KB trailing whitespace", validJSON + strings.Repeat(" ", limit+1-len(validJSON)), http.StatusBadRequest},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			store := NewMemoryStore()
+			seed, err := NewService(store).Create("existing")
+			if err != nil {
+				t.Fatal(err)
+			}
+			response := httptest.NewRecorder()
+			testMux(store).ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(tt.body)))
+			assertEnvelope(t, response, tt.status)
+			if tt.status == http.StatusBadRequest && (len(store.todos) != 1 || store.todos[seed.ID] != seed) {
+				t.Fatalf("oversized request changed storage: %+v", store.todos)
+			}
+		})
+	}
+}
+
 func TestHandlerInternalError(t *testing.T) {
 	for _, detail := range []string{"secret storage failure", "private backend address"} {
 		t.Run(detail, func(t *testing.T) {

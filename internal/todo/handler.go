@@ -19,6 +19,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	title, err := decodeTitle(r.Body)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, err.Error(), nil)
