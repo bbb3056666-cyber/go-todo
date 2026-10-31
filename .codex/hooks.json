@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -NonInteractive -File \"F:/go-todo/.codex/hooks/check.ps1\"",
+            "timeout": 120,
+            "statusMessage": "Running make check"
+          }
+        ]
+      }
+    ]
+  }
+}
